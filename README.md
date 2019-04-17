@@ -8,3 +8,5 @@ Cleans up system files:
 
 
 You can add or remove any of the above as needed, this is just a super-generic version
+
+Just download the file and run it via Powershell.
