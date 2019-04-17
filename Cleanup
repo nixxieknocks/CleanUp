@@ -1,0 +1,84 @@
+Write-Information "Because I'm sick of cleaning my computer..."
+function foldersize($folder){
+    Write-Host "Calculates the folder size in MB"   
+        $foldersizeInByte = (Get-ChildItem $folder -Recurse | Measure-Object -Property length -sum) 
+        $foldersizeInMB = ($foldersizeInByte.sum / 1048576)
+        return $foldersizeInMB
+    }
+    function before($folder1){
+        $x=foldersize($folder1)
+        Write-Host "Total before cleanup: $x MB"
+        return $x
+    }
+    function Post($folder2){
+        $y=foldersize($folder2)
+        Write-Host "Total before cleanup: $x MB"
+        return $y
+    }
+    function msg($folder3){
+        Write-Host "removing Junk files in $folder3"
+    }
+    function totalmsg($folder4,$sum){
+        write-host "Total space cleared in MB from $folder4 $Sum"
+    }
+    function delete($folder5){
+        [double]$a=before($folder5)
+        msg($folder5)
+        Remove-Item -Recurse $folder5 -Force -Verbose
+        [double]$b=post($folder5)
+
+        $total=$a-$b
+        totalmsg($folder5,$total)
+        $a=0
+        $b=0
+        $total=0
+    }
+#end of functions
+#start of variables
+    $objShell = New-Object -ComObject Shell.Application     
+    $Recyclebin = $objShell.Namespace(0xA)       
+    $temp = get-ChildItem "env:\TEMP"     
+    $temp2 = $temp.Value     
+
+    $user = $env:UserName
+    $WinTemp = "$env:SystemDrive\Windows\Temp\*"        
+    $downloads="$env:SystemDrive\users\$user\downloads\*"  
+    $DowloadeUpdate="$env:SystemDrive\Windows\SoftwareDistribution\Download\*"  
+#end of variables
+
+#job-proper start
+
+#remove temp files from 'C:\Users\USERNAME\AppData\Local\Temp'
+    [double]$a=before($temp2)
+    msg($temp2)
+    Remove-Item -Recurse "$temp2\*" -Force -Verbose
+    [double]$b=post($temp2)
+
+    $total=$a-$b
+    totalmsg($temp2,$total)
+
+    # Remove content of download folder of administrator account      
+        delete($downloads)     
+
+    # Empty Recycle Bin    
+    write-Host "Emptying Recycle Bin." -ForegroundColor Cyan      
+    $Recyclebin.items() | %{ remove-item $_.path -Recurse -verbose -Confirm:$false}     
+
+
+# Remove Windows Temp Directory   
+    delete($WinTemp)  
+
+# Remove downloaded update  
+    delete($DowloadeUpdate)  
+  
+#6# Running Disk Clean up Tool      
+    write-Host "starting Windows disk Clean up Tool" -ForegroundColor Cyan     
+    cleanmgr.exe /SAGESET:50  
+    sleep 30  
+    cleanmgr.exe /SAGERUN:50    
+
+    write-Host "**Clean-up done*"  
+##End of cleanup...##  
+
+
+Write-information "Something else I'm sick of doing - "
