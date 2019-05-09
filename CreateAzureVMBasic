@@ -1,0 +1,44 @@
+function make_vm{
+    $vNetName = "vm_01_burn_vNet"
+    $VMLocalAdminUser = "AdminUserName"
+    $VMLocalAdminSecurePassword = ConvertTo-SecureString <passwordHere> -AsPlainText -Force
+    $LocationName = "eastus"
+    $ResourceGroupName = "vm-RG"
+    $ComputerName = "vmBurn"
+    $VMName = "vm-01_burn"
+    $VMSize = "Standard_DS3"
+    
+    $NetworkName = "vm_01_burn_vNet"
+    $NICName = "vm_01_burn_NIC"
+    $SubnetName = "vm_Burn_Subnet"
+    $SubnetAddressPrefix = "10.0.0.0/24"
+    $VnetAddressPrefix = "10.0.0.0/16"
+
+
+    #Login
+    Connect-AzureRmAccount
+    #Let's not mess with a legit account
+    Select-AzureRmSubscription -SubscriptionId "<subscription>"
+    #Just Making sure
+    Write-Host "Connection Information:" Get-AzureRmContext
+    #Select-AzureRmSubscription -SubscriptionId "<subscription>"
+    #Vanity
+    Get-AzureRmResourceGroupDeployment -ResourceGroupName vm-RG
+
+    
+    $SingleSubnet = New-AzureRmVirtualNetworkSubnetConfig -Name $SubnetName -AddressPrefix $SubnetAddressPrefix
+    $Vnet = New-AzureRmVirtualNetwork -Name $NetworkName -ResourceGroupName $ResourceGroupName -Location $LocationName -AddressPrefix $VnetAddressPrefix -Subnet $SingleSubnet
+    $NIC = New-AzureRmNetworkInterface -Name $NICName -ResourceGroupName $ResourceGroupName -Location $LocationName -SubnetId $Vnet.Subnets[0].Id
+    
+    $Credential = New-Object System.Management.Automation.PSCredential ($VMLocalAdminUser, $VMLocalAdminSecurePassword);
+    
+    $VirtualMachine = New-AzureRmVMConfig -VMName $VMName -VMSize $VMSize
+    $VirtualMachine = Set-AzureRmVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $ComputerName -Credential $Credential -ProvisionVMAgent -EnableAutoUpdate
+    $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $VirtualMachine -Id $NIC.Id
+    $VirtualMachine = Set-AzureRmVMSourceImage -VM $VirtualMachine -PublisherName 'MicrosoftWindowsServer' -Offer 'WindowsServer' -Skus '2012-R2-Datacenter' -Version latest
+    $VirtualMachine = Add-AzureKeyVaultKey VmTest 
+    $virtualMachine = Get-AzureRmVMExtension 
+
+    New-AzureRmVM -ResourceGroupName $ResourceGroupName -Location $LocationName -VM $VirtualMachine -Verbose
+}
+
